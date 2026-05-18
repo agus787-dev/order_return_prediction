@@ -1,6 +1,6 @@
 # Data files
 data/raw/*.csv
-data/preprocessed/*.csv
+data/processed/*.csv
 
-# Models
+# Model
 models/*.joblib
