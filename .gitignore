@@ -1,0 +1,6 @@
+# Data files
+data/raw/*.csv
+data/processed/*.csv
+
+# Models
+models/*.joblib
