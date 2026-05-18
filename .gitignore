@@ -1,9 +1,5 @@
 # Data files
-data/raw/order_return_data.csv
-data/preprocessed/x_train.csv
-data/preprocessed/y_train.csv
-data/preprocessed/x_test.csv
-data/preprocessed/y_test.csv
+data/
 
 # Model
-models/baseline/best_model.joblib
+models/

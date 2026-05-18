@@ -1,63 +1,49 @@
 
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import PowerTransformer
+from sklearn.linear_model import LassoCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+
 
 class FeatureEngineer:
     def __init__(self):
-        self.transformer = PowerTransformer(method="yeo-johnson")  # skewness uchun
         self.skewed_cols  = []
 
     def add_features(self, df):
         df = df.copy()
+        
+        df["order_date"] = pd.to_datetime(df["order_date"])
 
-        # 1. Yetkazib berish tezligi
+        df["delivery_date"] = pd.to_datetime(df["delivery_date"])
+
+        df["delivery_days"] = (
+            df["delivery_date"] - df["order_date"]
+        ).dt.days
+        
+
         df["is_fast_delivery"] = (df["delivery_days"] <= 3).astype(int)
         df["is_late_delivery"] = (df["delivery_days"] > 7).astype(int)
+        
+        
+        df["user_dob"] = pd.to_datetime(df["user_dob"])
 
-        # 2. Narx kategoriyasi
-        df["price_category"] = pd.cut(
-            df["item_price"],
-            bins=[0, 20, 50, 100, 999999],
-            labels=[0, 1, 2, 3]
-        ).astype(int)
-
-        # 3. Foydalanuvchi yoshi kategoriyasi
-        df["age_group"] = pd.cut(
-            df["user_age"],
-            bins=[0, 25, 35, 50, 999],
-            labels=[0, 1, 2, 3]
-        ).astype(int)
-
-        # 4. Hafta oxiri buyurtma
-        df["is_weekend"] = (df["order_dayofweek"] >= 5).astype(int)
-
-        # 5. Narx * yetkazib berish kunlari
-        df["price_x_delivery"] = df["item_price"] * df["delivery_days"]
+        df["user_age"] = (
+            pd.Timestamp.today() - df["user_dob"]
+        ).dt.days // 365
 
         print(f"✓ Yangi featurelar qo'shildi: {df.shape[1]} ustun")
         return df
 
     def fix_skewness(self, df, threshold=0.75):
         df = df.copy()
-
-        # Skew bo'lgan raqamli ustunlarni topish
-        num_cols = df.select_dtypes(include="number").columns.tolist()
-
-        # "return" target ustunini chiqarib tashlash
-        if "return" in num_cols:
-            num_cols.remove("return")
-
-        skewness = df[num_cols].skew().abs()
-        self.skewed_cols = skewness[skewness > threshold].index.tolist()
-
-        print(f"✓ Skewed ustunlar ({len(self.skewed_cols)} ta): {self.skewed_cols}")
-
-        if self.skewed_cols:
-            df[self.skewed_cols] = self.transformer.fit_transform(df[self.skewed_cols])
-            print("✓ Skewness tuzatildi (Yeo-Johnson)")
-
-        return df
+        skewness = df.select_dtypes(include="number").skew()
+        features_log = skewness[(skewness >= threshold)].index.tolist()
+        
+        # for col in features_log:
+        #     if (self.df[col] > 0).all():  # only positive values
+        #         self.df[col] = np.log1p(self.df[col])
+        return features_log
 
     def check_skewness(self, df):
         # Skewness darajasini ko'rsatish
@@ -66,3 +52,49 @@ class FeatureEngineer:
         print("\n📊 Skewness darajalari:")
         print(skew_df)
         return skew_df
+    
+    def lasso_selector(self, x_train, x_test, y_train ):
+        X_train_lasso = x_train.copy()
+        X_test_lasso = x_test.copy()
+
+
+        scaler = StandardScaler()
+        X_train_scaled_lasso = scaler.fit_transform(X_train_lasso)
+        X_test_scaled_lasso = scaler.transform(X_test_lasso)
+
+
+        lasso = LassoCV(cv=5, random_state=42)
+        lasso.fit(X_train_scaled_lasso, y_train)
+
+
+        selected_features_lasso = X_train_lasso.columns[lasso.coef_ != 0].tolist()
+
+        print("Selected features for Linear Models:", selected_features_lasso)
+
+        # Reduce train/test to selected features
+        X_train_lasso_selected = X_train_lasso[selected_features_lasso]
+        X_test_lasso_selected = X_test_lasso[selected_features_lasso]
+        
+        return X_train_lasso_selected, X_test_lasso_selected
+    def random_forest_selector(self, x_train, x_test, y_train):
+        X_train_tree = x_train.copy()
+        X_test_tree = x_test.copy()
+
+
+        rf = RandomForestClassifier(n_estimators=100, random_state=42)
+        rf.fit(X_train_tree, y_train)
+
+        # Get feature importances
+        importances = pd.Series(rf.feature_importances_, index=X_train_tree.columns)
+        importances_sorted = importances.sort_values(ascending=False)
+
+
+        top_features_tree = importances_sorted.head(10).index.tolist()
+        print("Top features for Tree Models:", top_features_tree)
+
+
+        X_train_tree_selected = X_train_tree[top_features_tree]
+        X_test_tree_selected = X_test_tree[top_features_tree]
+        
+        return X_train_tree_selected, X_test_tree_selected
+        
