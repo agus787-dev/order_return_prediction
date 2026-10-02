@@ -17,18 +17,18 @@ class FeatureEngineer:
 
         df["delivery_date"] = pd.to_datetime(df["delivery_date"])
 
-        df["delivery_days"] = (
+        df["fe_delivery_days"] = (
             df["delivery_date"] - df["order_date"]
         ).dt.days
         
 
-        df["is_fast_delivery"] = (df["delivery_days"] <= 3).astype(int)
-        df["is_late_delivery"] = (df["delivery_days"] > 7).astype(int)
+        df["fe_is_fast_delivery"] = (df["fe_delivery_days"] <= 3).astype(int)
+        df["fe_is_late_delivery"] = (df["fe_delivery_days"] > 7).astype(int)
         
         
         df["user_dob"] = pd.to_datetime(df["user_dob"])
 
-        df["user_age"] = (
+        df["fe_user_age"] = (
             pd.Timestamp.today() - df["user_dob"]
         ).dt.days // 365
 

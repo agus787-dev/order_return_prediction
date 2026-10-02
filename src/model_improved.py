@@ -19,7 +19,7 @@ class ModelTrainerImproved:
      return self.trained
    
    def RandomForest(self, x_train, y_train):
-     rftree = RandomForestClassifier(random_state=42)
+     rftree = RandomForestClassifier(random_state=42, n_jobs=-1, n_estimators=100, max_depth=10, min_samples_split=5, min_samples_leaf=2)
      rftree.fit(x_train, y_train)
      self.trained["Random Forest"] = rftree
      print("Random Forest o'rgatildi")
