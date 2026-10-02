@@ -6,9 +6,9 @@ import torch.nn as nn
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                              f1_score, roc_auc_score, confusion_matrix)
 
-sys.path.append("..")
+# sys.path.append("..")
 
-from src.data_processing import DataProcessingConfig   
+from .data_processing import DataProcessingConfig   
 
 
 

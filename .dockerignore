@@ -1,0 +1,10 @@
+myenv/
+.git/
+data/
+deep_learning/notebooks/
+deep_learning/scripts/
+notebooks/
+scripts/
+**/__pycache__/
+*.csv
+
